@@ -1,8 +1,8 @@
 # -*- mode: Perl -*-
 
 # Data::Compare - compare perl data structures
-# Author: Fabien Tassin <fta@oleane.net>
-# Copyright 1999 Fabien Tassin <fta@oleane.net>
+# Author: Fabien Tassin <fta@sofaraway.org>
+# Copyright 1999-2001 Fabien Tassin <fta@sofaraway.org>
 
 package Data::Compare;
 
@@ -13,8 +13,10 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.01;
+$VERSION = 0.02;
 $DEBUG   = 0;
+
+sub Compare ($$);
 
 sub new {
   my $this = shift;
@@ -161,15 +163,15 @@ C<Data::Compare> in a near future.
 
 =head1 AUTHOR
 
-Fabien Tassin        fta@oleane.net
+Fabien Tassin        fta@sofaraway.org
 
-Copyright (c) 1999 Fabien Tassin. All rights reserved.
+Copyright (c) 1999-2001 Fabien Tassin. All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 =head1 VERSION
 
-Version 0.01    (21 Apr 1999)
+Version 0.02    (25 Apr 2001)
 
 =head1 SEE ALSO
 
