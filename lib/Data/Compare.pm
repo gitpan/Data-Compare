@@ -16,7 +16,7 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.07;
+$VERSION = 0.08;
 $DEBUG   = 0;
 
 my %handler;
@@ -70,7 +70,7 @@ sub register_plugins {
     }
 }
 
-sub Compare ($$);
+sub Compare ($$;$);
 
 sub new {
   my $this = shift;
@@ -92,18 +92,23 @@ sub Cmp ($;$$) {
   return Compare($x, $y);
 }
 
-sub Compare ($$) {
-  croak "Usage: Data::Compare::Compare(x, y)\n" unless $#_ == 1;
+sub Compare ($$;$) {
+  croak "Usage: Data::Compare::Compare(x, y, [opts])\n" unless $#_ == 1 || $#_ == 2;
   my $x = shift;
   my $y = shift;
+  my $opts = shift || {};
+
+  $opts->{ignore_hash_keys} = { map {
+    ($_, 1)
+  } @{$opts->{ignore_hash_keys}} } if(ref($opts->{ignore_hash_keys}) eq 'ARRAY');
 
   my $refx = ref $x;
   my $refy = ref $y;
 
   if(exists($handler{$refx}) && exists($handler{$refx}{$refy})) {
-      return &{$handler{$refx}{$refy}}($x, $y);
+      return &{$handler{$refx}{$refy}}($x, $y, $opts);
   } elsif(exists($handler{$refy}) && exists($handler{$refy}{$refx})) {
-      return &{$handler{$refy}{$refx}}($x, $y);
+      return &{$handler{$refy}{$refx}}($x, $y, $opts);
   }
 
   if(!$refx && !$refy) { # both are scalars
@@ -117,14 +122,14 @@ sub Compare ($$) {
     return 1;
   }
   elsif ($refx eq 'SCALAR' || $refx eq 'REF') {
-    return Compare($$x, $$y);
+    return Compare($$x, $$y, $opts);
   }
   elsif ($refx eq 'ARRAY') {
     if ($#$x == $#$y) { # same length
       my $i = -1;
       for (@$x) {
 	$i++;
-	return 0 unless Compare($$x[$i], $$y[$i]);
+	return 0 unless Compare($$x[$i], $$y[$i], $opts);
       }
       return 1;
     }
@@ -133,15 +138,19 @@ sub Compare ($$) {
     }
   }
   elsif ($refx eq 'HASH') {
-    return 0 unless scalar keys %$x == scalar keys %$y;
-    for (keys %$x) {
+    my @kx = grep { !$opts->{ignore_hash_keys}->{$_} } keys %$x;
+    my @ky = grep { !$opts->{ignore_hash_keys}->{$_} } keys %$y; # heh, KY
+
+    return 0 unless scalar @kx == scalar @ky;
+
+    for (@kx) {
       next unless defined $$x{$_} || defined $$y{$_};
-      return 0 unless defined $$y{$_} && Compare($$x{$_}, $$y{$_});
+      return 0 unless defined $$y{$_} && Compare($$x{$_}, $$y{$_}, $opts);
     }
     return 1;
   }
   elsif($refx eq 'Regexp') {
-    return Compare($x.'', $y.'');
+    return Compare($x.'', $y.'', $opts);
   }
   elsif ($refx eq 'CODE') {
     return 0;
@@ -154,17 +163,17 @@ sub Compare ($$) {
     if ($type eq 'HASH') {
       my %x = %$x;
       my %y = %$y;
-      return Compare(\%x, \%y);
+      return Compare(\%x, \%y, $opts);
     }
     elsif ($type eq 'ARRAY') {
       my @x = @$x;
       my @y = @$y;
-      return Compare(\@x, \@y);
+      return Compare(\@x, \@y, $opts);
     }
     elsif ($type eq 'SCALAR' || $type eq 'REF') {
       my $x = $$x;
       my $y = $$y;
-      return Compare($x, $y);
+      return Compare($x, $y, $opts);
     }
     elsif ($type eq 'GLOB') {
       return 0;
@@ -202,23 +211,28 @@ Data::Compare - compare perl data structures
 
     use Data::Compare;
 
-    my $h = { 'foo' => [ 'bar', 'baz' ], 'FOO' => [ 'one', 'two' ] };
+    my $h1 = { 'foo' => [ 'bar', 'baz' ],  'FOO' => [ 'one', 'two' ] };
+    my $h2 = { 'foo' => [ 'bar', 'barf' ], 'FOO' => [ 'one', 'two' ] };
     my @a1 = ('one', 'two');
     my @a2 = ('bar', 'baz');
     my %v = ( 'FOO', \@a1, 'foo', \@a2 );
 
     # simple procedural interface
-    print 'structures of $h and \%v are ',
-      Compare($h, \%v) ? "" : "not ", "identical.\n";
+    print 'structures of $h1 and \%v are ',
+      Compare($h1, \%v) ? "" : "not ", "identical.\n";
+
+    print 'structures of $h1 and $h2 are ',
+      Compare($h1, $h2, { ignore_hash_keys => [qw(foo)] }) ? '' : 'not ',
+      "close enough to identical.\n";
 
     # OO usage
-    my $c = new Data::Compare($h, \%v);
-    print 'structures of $h and \%v are ',
+    my $c = new Data::Compare($h1, \%v);
+    print 'structures of $h1 and \%v are ',
       $c->Cmp ? "" : "not ", "identical.\n";
     # or
     my $c = new Data::Compare;
     print 'structures of $h and \%v are ',
-      $c->Cmp($h, \%v) ? "" : "not ", "identical.\n";
+      $c->Cmp($h1, \%v) ? "" : "not ", "identical.\n";
 
 =head1 DESCRIPTION
 
@@ -256,7 +270,23 @@ Sorry, that's the best we can do.
 These are assumed not to match unless the references are identical - ie,
 both are references to the same thing.
 
-=back 4
+=back
+
+You may also customise how we compare structures by supplying options in
+a hashref as a third parameter to the C<Compare()> function.  This is not
+yet available through the OO-ish interface.  These options will be in
+force for the *whole* of your comparison, so will apply to structures
+that are lurking deep down in your data as well as at the top level, so
+beware!
+
+=over 4
+
+=item ignore_hash_keys
+
+an arrayref of strings. When comparing two hashes, any keys mentioned in
+this list will be ignored.
+
+=back
 
 =head1 PLUGINS
 

@@ -9,3 +9,4 @@
                              once.  S::P plugin renamed so it would work with
 			     this bugfix.  Clean-up of code.  Fix minor doc-bug
 			     in lib/Data/Compare/Plugins.pod.
+0.08  2004-01-20  DCANTRELL  Added options, and ignore_hash_keys
