@@ -17,7 +17,7 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.12;
+$VERSION = 0.13;
 $DEBUG   = 0;
 
 my %handler;
@@ -109,7 +109,6 @@ sub Compare ($$;$) {
         $opts->{recursion_detector} = 0;
     }
     $opts->{recursion_detector}++;
-    print "Recursion ... ".$opts->{recursion_detector}."\n";
 
     warn "Yaroo! deep recursion!\n" if($opts->{recursion_detector} == 99);
   

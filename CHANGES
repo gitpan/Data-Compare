@@ -18,3 +18,4 @@
 0.12  2004-11-09  DCANTRELL  Fixed recursion detection bug - wasn't decrementing
                              counter properly!  (thanks to Jenda for the bug
                              report)
+0.13  2004-11-09  DCANTRELL  Oops, left in some debugging output
