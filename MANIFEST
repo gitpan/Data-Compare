@@ -1,6 +1,8 @@
 MANIFEST
-MANIFEST.SKIP
+README
+CHANGES
 Makefile.PL
 lib/Data/Compare.pm
 t/compare.t
 t/oo.t
+t/scalar-properties.t

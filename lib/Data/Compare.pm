@@ -2,6 +2,9 @@
 
 # Data::Compare - compare perl data structures
 # Author: Fabien Tassin <fta@sofaraway.org>
+# updated by David Cantrell <david@cantrell.org.uk> to cope with
+#   Scalar::Properties without breaking and to fix a potential
+#   bug with use of /o
 # Copyright 1999-2001 Fabien Tassin <fta@sofaraway.org>
 
 package Data::Compare;
@@ -13,7 +16,7 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.02;
+$VERSION = 0.03;
 $DEBUG   = 0;
 
 sub Compare ($$);
@@ -38,6 +41,26 @@ sub Cmp ($;$$) {
   Compare($x, $y);
 }
 
+# Compare a S::P and a scalar
+sub sp_scalar_compare {
+    my($scalar, $sp) = @_;
+    ($scalar, $sp) = ($sp, $scalar) if(ref($scalar));
+    return sp_sp_compare($scalar, $sp) if(ref($scalar));
+    return 1 if($scalar eq $sp);
+    0;
+}
+
+# Compare two S::Ps
+sub sp_sp_compare {
+    my($sp1, $sp2) = @_;
+    return 0 unless($sp1 eq $sp2);
+    return 0 unless(Compare([sort $sp1->get_props()], [sort $sp2->get_props()]));
+    return 0 if(
+        grep { !Compare(eval "\$sp1->$_()", eval "\$sp2->$_()") } $sp1->get_props()
+    );
+    1;
+}
+
 sub Compare ($$) {
   croak "Usage: Data::Compare::Compare(x, y)\n" unless $#_ == 1;
   my $x = shift;
@@ -46,7 +69,11 @@ sub Compare ($$) {
   my $refx = ref $x;
   my $refy = ref $y;
 
-  unless ($refx || $refy) { # both are scalars
+  if($refx eq 'Scalar::Properties' || $refy eq 'Scalar::Properties') {
+    # at least one S::P
+    return sp_scalar_compare($x, $y);
+  }
+  elsif(!$refx && !$refy) { # both are scalars
     return $x eq $y if defined $x && defined $y; # both are defined
     !(defined $x || defined $y);
   }
@@ -90,7 +117,7 @@ sub Compare ($$) {
     0;
   }
   else { # a package name (object blessed)
-    my ($type) = "$x" =~ m/^$refx=(\S+)\(/o;
+    my ($type) = "$x" =~ m/^$refx=(\S+)\(/;
     if ($type eq 'HASH') {
       my %x = %$x;
       my %y = %$y;
@@ -151,6 +178,12 @@ Data::Compare - compare perl data structures
 Compare two perl data structures recursively. Returns 0 if the
 structures differ, else returns 1.
 
+Note that Scalar::Properties objects are a special case.  If you compare
+a scalar and a Scalar::Properties, then they will be considered the same
+if the two values are the same, regardless of the presence of properties.
+If you compare two Scalar::Properties objects, then they will only be
+considered the same if the values and the properties match.
+
 =head1 BUGS
 
 C<Data::Compare> cheats with REF, CODE and GLOB references. If such a
@@ -169,9 +202,12 @@ Copyright (c) 1999-2001 Fabien Tassin. All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
-=head1 VERSION
+David Cantrell       david@cantrell.org.uk
 
-Version 0.02    (25 Apr 2001)
+Seeing that Fabien seems to have disappeared, David Cantrell has become
+a co-maintainer so he can apply needed patches.  The licence, of course,
+remains the same, and all communications about this module should be
+CCed to Fabien in case he ever returns and wants his baby back.
 
 =head1 SEE ALSO
 
