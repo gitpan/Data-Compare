@@ -1,0 +1,7 @@
+^Makefile(\.old)?$
+^MANIFEST\.bak$
+.*~$
+(^|/)TAGS$
+^old/
+.*\.tar\.gz$
+blib/

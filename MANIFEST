@@ -1,0 +1,6 @@
+MANIFEST
+MANIFEST.SKIP
+Makefile.PL
+lib/Data/Compare.pm
+t/compare.t
+t/oo.t
