@@ -17,7 +17,7 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.11;
+$VERSION = 0.12;
 $DEBUG   = 0;
 
 my %handler;
@@ -97,118 +97,122 @@ sub Cmp ($;$$) {
 }
 
 sub Compare ($$;$) {
-  croak "Usage: Data::Compare::Compare(x, y, [opts])\n" unless $#_ == 1 || $#_ == 2;
+    croak "Usage: Data::Compare::Compare(x, y, [opts])\n" unless $#_ == 1 || $#_ == 2;
 
-  my $x = shift @_;
-  my $y = shift @_;
-  my $opts = (shift @_) || {};
+    my $x = shift @_;
+    my $y = shift @_;
+    my $opts = (shift @_) || {};
+    my $rval = '';
 
-  if(!exists($opts->{recursion_detector})) {
-    %been_there = ();
-    $opts->{recursion_detector} = 0;
-  }
-  $opts->{recursion_detector}++;
+    if(!exists($opts->{recursion_detector})) {
+        %been_there = ();
+        $opts->{recursion_detector} = 0;
+    }
+    $opts->{recursion_detector}++;
+    print "Recursion ... ".$opts->{recursion_detector}."\n";
 
-  # print "$context[3]\n";
-
-  die "Yaroo! deep recursion!\n" if($opts->{recursion_detector} == 99);
+    warn "Yaroo! deep recursion!\n" if($opts->{recursion_detector} == 99);
   
-  if(
-    (ref($x) && exists($been_there{$x}) && $been_there{$x} > 1) ||
-    (ref($y) && exists($been_there{$y}) && $been_there{$y} > 1)
-  ) {
-    return 0; # is this the right thing to do?
-  }
-  $been_there{$x}++ if(ref($x));
-  $been_there{$y}++ if(ref($y));
+    if(
+        (ref($x) && exists($been_there{$x}) && $been_there{$x} > 1) ||
+        (ref($y) && exists($been_there{$y}) && $been_there{$y} > 1)
+    ) {
+        $rval = 0; # is this the right thing to do?
+    } else {
+        $been_there{$x}++ if(ref($x));
+        $been_there{$y}++ if(ref($y));
 
-  $opts->{ignore_hash_keys} = { map {
-    ($_, 1)
-  } @{$opts->{ignore_hash_keys}} } if(ref($opts->{ignore_hash_keys}) eq 'ARRAY');
+        $opts->{ignore_hash_keys} = { map {
+            ($_, 1)
+        } @{$opts->{ignore_hash_keys}} } if(ref($opts->{ignore_hash_keys}) eq 'ARRAY');
 
-  my $refx = ref $x;
-  my $refy = ref $y;
+        my $refx = ref $x;
+        my $refy = ref $y;
 
-  if(exists($handler{$refx}) && exists($handler{$refx}{$refy})) {
-      return &{$handler{$refx}{$refy}}($x, $y, $opts);
-  } elsif(exists($handler{$refy}) && exists($handler{$refy}{$refx})) {
-      return &{$handler{$refy}{$refx}}($x, $y, $opts);
-  }
+        if(exists($handler{$refx}) && exists($handler{$refx}{$refy})) {
+            $rval = &{$handler{$refx}{$refy}}($x, $y, $opts);
+        } elsif(exists($handler{$refy}) && exists($handler{$refy}{$refx})) {
+            $rval = &{$handler{$refy}{$refx}}($x, $y, $opts);
+        }
 
-  if(!$refx && !$refy) { # both are scalars
-    return $x eq $y if defined $x && defined $y; # both are defined
-    return !(defined $x || defined $y);
-  }
-  elsif ($refx ne $refy) { # not the same type
-    return 0;
-  }
-  elsif ($x == $y) { # exactly the same reference
-    return 1;
-  }
-  elsif ($refx eq 'SCALAR' || $refx eq 'REF') {
-    return Compare($$x, $$y, $opts);
-  }
-  elsif ($refx eq 'ARRAY') {
-    if ($#$x == $#$y) { # same length
-      my $i = -1;
-      for (@$x) {
-	$i++;
-	return 0 unless Compare($$x[$i], $$y[$i], $opts);
-      }
-      return 1;
-    }
-    else {
-      return 0;
-    }
-  }
-  elsif ($refx eq 'HASH') {
-    my @kx = grep { !$opts->{ignore_hash_keys}->{$_} } keys %$x;
-    my @ky = grep { !$opts->{ignore_hash_keys}->{$_} } keys %$y; # heh, KY
+        elsif(!$refx && !$refy) { # both are scalars
+            if(defined $x && defined $y) { # both are defined
+                $rval = $x eq $y;
+            } else { $rval = !(defined $x || defined $y); }
+        }
+        elsif ($refx ne $refy) { # not the same type
+            $rval = 0;
+        }
+        elsif ($x == $y) { # exactly the same reference
+            $rval = 1;
+        }
+        elsif ($refx eq 'SCALAR' || $refx eq 'REF') {
+            $rval = Compare($$x, $$y, $opts);
+        }
+        elsif ($refx eq 'ARRAY') {
+            if ($#$x == $#$y) { # same length
+                my $i = -1;
+                $rval = 1;
+                for (@$x) {
+            	    $i++;
+      	            $rval = 0 unless Compare($$x[$i], $$y[$i], $opts);
+                }
+            }
+            else {
+                $rval = 0;
+            }
+        }
+        elsif ($refx eq 'HASH') {
+            my @kx = grep { !$opts->{ignore_hash_keys}->{$_} } keys %$x;
+            my @ky = grep { !$opts->{ignore_hash_keys}->{$_} } keys %$y; # heh, KY
+            $rval = 1;
+            $rval = 0 unless scalar @kx == scalar @ky;
 
-    return 0 unless scalar @kx == scalar @ky;
-
-    for (@kx) {
-      next unless defined $$x{$_} || defined $$y{$_};
-      return 0 unless defined $$y{$_} && Compare($$x{$_}, $$y{$_}, $opts);
+            for (@kx) {
+                next unless defined $$x{$_} || defined $$y{$_};
+                $rval = 0 unless defined $$y{$_} && Compare($$x{$_}, $$y{$_}, $opts);
+            }
+        }
+        elsif($refx eq 'Regexp') {
+            $rval = Compare($x.'', $y.'', $opts);
+        }
+        elsif ($refx eq 'CODE') {
+            $rval = 0;
+        }
+        elsif ($refx eq 'GLOB') {
+            $rval = 0;
+        }
+        else { # a package name (object blessed)
+            my ($type) = "$x" =~ m/^$refx=(\S+)\(/;
+            if ($type eq 'HASH') {
+                my %x = %$x;
+                my %y = %$y;
+                $rval = Compare(\%x, \%y, $opts);
+            }
+            elsif ($type eq 'ARRAY') {
+                my @x = @$x;
+                my @y = @$y;
+                $rval = Compare(\@x, \@y, $opts);
+            }
+            elsif ($type eq 'SCALAR' || $type eq 'REF') {
+                my $x = $$x;
+                my $y = $$y;
+                $rval = Compare($x, $y, $opts);
+            }
+            elsif ($type eq 'GLOB') {
+                $rval = 0;
+            }
+            elsif ($type eq 'CODE') {
+                $rval = 0;
+            }
+            else {
+                croak "Can't handle $type type.";
+                $rval = 0;
+            }
+        }
     }
-    return 1;
-  }
-  elsif($refx eq 'Regexp') {
-    return Compare($x.'', $y.'', $opts);
-  }
-  elsif ($refx eq 'CODE') {
-    return 0;
-  }
-  elsif ($refx eq 'GLOB') {
-    return 0;
-  }
-  else { # a package name (object blessed)
-    my ($type) = "$x" =~ m/^$refx=(\S+)\(/;
-    if ($type eq 'HASH') {
-      my %x = %$x;
-      my %y = %$y;
-      return Compare(\%x, \%y, $opts);
-    }
-    elsif ($type eq 'ARRAY') {
-      my @x = @$x;
-      my @y = @$y;
-      return Compare(\@x, \@y, $opts);
-    }
-    elsif ($type eq 'SCALAR' || $type eq 'REF') {
-      my $x = $$x;
-      my $y = $$y;
-      return Compare($x, $y, $opts);
-    }
-    elsif ($type eq 'GLOB') {
-      return 0;
-    }
-    elsif ($type eq 'CODE') {
-      return 0;
-    }
-    else {
-      croak "Can't handle $type type.";
-    }
-  }
+    $opts->{recursion_detector}--;
+    return $rval;
 }
 
 sub plugins {
@@ -327,7 +331,7 @@ But comparing two different circular structures returns false:
     Compare([$x, $y], [$y, $x]); # <-- note different order
 
 And on a sort-of-related note, if you try to compare insanely deeply nested
-structures, the module will die.  For this to affect you, you need to go
+structures, the module will spit a warning.  For this to affect you, you need to go
 around a hundred levels deep though, and if you do that you have bigger
 problems which I can't help you with ;-)
 

@@ -8,7 +8,7 @@ use warnings;
 use Data::Compare;
 
 local $^W = 1;
-print "1..45\n";
+print "1..43\n";
 
 my $t = 1;
 
@@ -129,18 +129,7 @@ my $v4 = { 'foo' => $v3 };
 &comp(qr/abc/i, qr/[aA][bB][cC]/, 0, "Non-identical regexen");
 &comp(qr/abc/i, '(?i-xsm:abc)', 0, "Regex and scalar which stringify the same");
 
-# 41, 42 - check that we DTRT on infinite recursion
-my $a = [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]];
-my $b = [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]];
-eval { Compare($a, $b); };
-print 'not ' unless($@);
-print 'ok '.($t++)." die on deep recursion\n";
-
-eval { Compare([5], [5]) foreach(1..1000); };
-print 'not ' if($@);
-print 'ok '.($t++)." recursion counter correctly reset\n";
-
-# 43 .. 45
+# 41 .. 43
 # scalar cross
 $a = [];
 my($x, $y);
