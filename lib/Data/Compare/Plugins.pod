@@ -45,8 +45,8 @@ for the data-type, ie:
 
 Third and last, we need a reference to the
 subroutine which does the comparison.
-That subroutine should expect to take two parameters, at least one of
-which will be of the specified type.  It should return 1 if they compare
+That subroutine should expect to take two parameters, which will be of
+the specified type.  It should return 1 if they compare
 the same, or 0 if they compare different.
 
 Be aware that while you might give a description like:
@@ -86,7 +86,7 @@ is clear and well-commented, and that you include tests and documentation.
 
 L<Data::Compare>
 
-L<Data::Compare::Plugins::Scalar-Properties>
+L<Data::Compare::Plugins::Scalar::Properties>
 
 =head1 AUTHOR
 

@@ -4,7 +4,7 @@
 # Author: Fabien Tassin <fta@sofaraway.org>
 # updated by David Cantrell <david@cantrell.org.uk>
 # Copyright 1999-2001 Fabien Tassin <fta@sofaraway.org>
-# portions Copyright 2003 David Cantrell
+# portions Copyright 2003, 2004 David Cantrell
 
 package Data::Compare;
 
@@ -16,7 +16,7 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.06;
+$VERSION = 0.07;
 $DEBUG   = 0;
 
 my %handler;
@@ -35,7 +35,15 @@ sub register_plugins {
 	        @INC
 	    )
     ) {
-        my $requires = require($file);
+        # all of this just to avoid loading the same plugin twice and
+	# generating a pile of warnings. Grargh!
+        $file =~ s!.*(Data/Compare/Plugins/.*)\.pm$!$1!;
+	$file =~ s!/!::!g;
+	# ignore badly named example from earlier version, oops
+	next if($file eq 'Data::Compare::Plugins::Scalar-Properties');
+        my $requires = eval "require $file";
+	next if($requires eq '1'); # already loaded this plugin?
+
 	# not an arrayref? bail
         if(ref($requires) ne 'ARRAY') {
             warn("$file isn't a valid Data::Compare plugin (didn't return arrayref)\n");
@@ -81,7 +89,7 @@ sub Cmp ($;$$) {
   my $x = shift || $self->{'x'};
   my $y = shift || $self->{'y'};
 
-  Compare($x, $y);
+  return Compare($x, $y);
 }
 
 sub Compare ($$) {
@@ -92,11 +100,6 @@ sub Compare ($$) {
   my $refx = ref $x;
   my $refy = ref $y;
 
-  # foreach my $type (keys %handler) {
-  #     if($refx eq $type || $refy eq $type) {
-  #         return &{$handler{$type}}($x, $y);
-  #     }
-  # }
   if(exists($handler{$refx}) && exists($handler{$refx}{$refy})) {
       return &{$handler{$refx}{$refy}}($x, $y);
   } elsif(exists($handler{$refy}) && exists($handler{$refy}{$refx})) {
@@ -105,16 +108,16 @@ sub Compare ($$) {
 
   if(!$refx && !$refy) { # both are scalars
     return $x eq $y if defined $x && defined $y; # both are defined
-    !(defined $x || defined $y);
+    return !(defined $x || defined $y);
   }
   elsif ($refx ne $refy) { # not the same type
-    0;
+    return 0;
   }
   elsif ($x == $y) { # exactly the same reference
-    1;
+    return 1;
   }
   elsif ($refx eq 'SCALAR' || $refx eq 'REF') {
-    Compare($$x, $$y);
+    return Compare($$x, $$y);
   }
   elsif ($refx eq 'ARRAY') {
     if ($#$x == $#$y) { # same length
@@ -123,10 +126,10 @@ sub Compare ($$) {
 	$i++;
 	return 0 unless Compare($$x[$i], $$y[$i]);
       }
-      1;
+      return 1;
     }
     else {
-      0;
+      return 0;
     }
   }
   elsif ($refx eq 'HASH') {
@@ -135,39 +138,39 @@ sub Compare ($$) {
       next unless defined $$x{$_} || defined $$y{$_};
       return 0 unless defined $$y{$_} && Compare($$x{$_}, $$y{$_});
     }
-    1;
+    return 1;
   }
   elsif($refx eq 'Regexp') {
-    Compare($x.'', $y.'');
+    return Compare($x.'', $y.'');
   }
   elsif ($refx eq 'CODE') {
-    0;
+    return 0;
   }
   elsif ($refx eq 'GLOB') {
-    0;
+    return 0;
   }
   else { # a package name (object blessed)
     my ($type) = "$x" =~ m/^$refx=(\S+)\(/;
     if ($type eq 'HASH') {
       my %x = %$x;
       my %y = %$y;
-      Compare(\%x, \%y);
+      return Compare(\%x, \%y);
     }
     elsif ($type eq 'ARRAY') {
       my @x = @$x;
       my @y = @$y;
-      Compare(\@x, \@y);
+      return Compare(\@x, \@y);
     }
     elsif ($type eq 'SCALAR' || $type eq 'REF') {
       my $x = $$x;
       my $y = $$y;
-      Compare($x, $y);
+      return Compare($x, $y);
     }
     elsif ($type eq 'GLOB') {
-      0;
+      return 0;
     }
     elsif ($type eq 'CODE') {
-      0;
+      return 0;
     }
     else {
       croak "Can't handle $type type.";
@@ -186,7 +189,7 @@ sub plugins_printable {
             $r .= join(":\t", map { $_ eq '' ? '[scalar]' : $_ } ($key, $_))."\n";
 	}
     }
-    $r;
+    return $r;
 }
 
 1;
@@ -230,7 +233,7 @@ A few data types are treated as special cases:
 
 This has been moved into a plugin, although functionality remains the
 same as with the previous version.  Full documentation is in
-L<Data::Compare::Plugins::Scalar-Properties>.
+L<Data::Compare::Plugins::Scalar::Properties>.
 
 =item Compiled regular expressions, eg qr/foo/
 

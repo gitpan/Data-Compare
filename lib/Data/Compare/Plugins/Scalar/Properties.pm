@@ -7,7 +7,7 @@ use Data::Compare;
 $VERSION = 1.0;
 
 sub register {
-    [
+    return [
         ['Scalar::Properties', \&sp_scalar_compare],
         ['', 'Scalar::Properties', \&sp_scalar_compare],
     ];
@@ -31,7 +31,7 @@ sub sp_scalar_compare {
 
     # we've really got a scalar and an S::P, so just compare values
     return 1 if($scalar eq $sp);
-    0;
+    return 0;
 }
 
 # Compare two S::Ps
@@ -51,7 +51,7 @@ sub sp_sp_compare {
     );
 
     # if we get here, all is tickety-boo
-    1;
+    return 1;
 }
 
 register();
