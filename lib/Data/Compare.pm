@@ -13,17 +13,19 @@ use warnings;
 
 use vars qw(@ISA @EXPORT $VERSION $DEBUG %been_there);
 use Exporter;
-use File::Find::Rule;
 use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.10;
+$VERSION = 0.11;
 $DEBUG   = 0;
 
 my %handler;
 
-register_plugins();
+if(!${^TAINT}) {
+    use File::Find::Rule;
+    register_plugins();
+}
 
 # finds and registers plugins
 sub register_plugins {
@@ -334,6 +336,8 @@ problems which I can't help you with ;-)
 The module takes plug-ins so you can provide specialised routines for
 comparing your own objects and data-types.  For details see
 L<Data::Compare::Plugins>.
+
+Plugins are *not* available when running in "taint" mode.
 
 A couple of functions are provided to examine what goodies have been
 made available through plugins:

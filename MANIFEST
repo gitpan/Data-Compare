@@ -12,3 +12,4 @@ t/oo.t
 t/opts-ignore-hash-keys.t
 t/plugins.t
 t/scalar-properties.t
+t/taint.t

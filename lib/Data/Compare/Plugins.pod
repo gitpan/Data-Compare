@@ -21,6 +21,9 @@ Data::Compare will try to load any module installed on your system under
 the various @INC/Data/Compare/Plugins/ directories.  If there is a problem
 loading any of them, an appropriate warning will be issued.
 
+Because of how we find plugins, no plugins are available when running in
+"taint" mode.
+
 =head1 WRITING PLUGINS
 
 Internally, plugins are C<require>d into Data::Compare.  This means that

@@ -25,3 +25,5 @@ more intelligent about S::Ps, I also spotted a potential bug to do with how
 Fabien had used /o on a regex match, so I fixed that too.  And then because
 I'd been talking about this on IRC, Anthony Fisher contributed a patch to
 fix some brokenness to do with how it handled references to refernces.
+
+Then I added features :-)

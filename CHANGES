@@ -13,3 +13,5 @@
 0.09  2004-02-23  DCANTRELL  Added deep recursion detection.
 0.10  2004-03-13  DCANTRELL  Replaced recursion detection with Rusty Conover's
                              much better implementation.
+0.11  2004-06-02  DCANTRELL  Now taint-safe - in taint mode there's no plugins
+                             (thanks Gabor Szabo for reporting the bug)
