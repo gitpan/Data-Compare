@@ -5,7 +5,7 @@ use strict;
 use Data::Compare;
 
 local $^W = 1;
-print "1..37\n";
+print "1..40\n";
 
 my $t = 1;
 
@@ -121,10 +121,17 @@ my $v4 = { 'foo' => $v3 };
 &comp(\\1, 1, 0);
 &comp(\\1, \1, 0);
 
+# 38 .. 40
+&comp(qr/abc/i, qr/abc/i, 1, "Identical regexen");
+&comp(qr/abc/i, qr/[aA][bB][cC]/, 0, "Non-identical regexen");
+&comp(qr/abc/i, '(?i-xsm:abc)', 0, "Regex and scalar which stringify the same");
+
 sub comp {
   my $a = shift;
   my $b = shift;
   my $expect = shift;
+  my $comment = shift;
 
-  print Compare ($a, $b) == $expect ? "" : "not ", "ok ", $t++, "\n";
+  print Compare ($a, $b) == $expect ? "" : "not ", "ok ", $t++,
+    ($comment) ? " $comment\n" : "\n";
 }

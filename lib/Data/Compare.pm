@@ -2,10 +2,9 @@
 
 # Data::Compare - compare perl data structures
 # Author: Fabien Tassin <fta@sofaraway.org>
-# updated by David Cantrell <david@cantrell.org.uk> to cope with
-#   Scalar::Properties without breaking and to fix a potential
-#   bug with use of /o
+# updated by David Cantrell <david@cantrell.org.uk>
 # Copyright 1999-2001 Fabien Tassin <fta@sofaraway.org>
+# portions Copyright 2003 David Cantrell
 
 package Data::Compare;
 
@@ -16,7 +15,7 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.04;
+$VERSION = 0.05;
 $DEBUG   = 0;
 
 sub Compare ($$);
@@ -107,9 +106,9 @@ sub Compare ($$) {
     }
     1;
   }
-  # elsif ($refx eq 'REF') {
-  #   0;
-  # }
+  elsif($refx eq 'Regexp') {
+    Compare($x.'', $y.'');
+  }
   elsif ($refx eq 'CODE') {
     0;
   }
@@ -178,21 +177,40 @@ Data::Compare - compare perl data structures
 Compare two perl data structures recursively. Returns 0 if the
 structures differ, else returns 1.
 
-Note that Scalar::Properties objects are a special case.  If you compare
+A few data types are treated as special cases:
+
+=over 4
+
+=item Scalar::Properties objects
+
+If you compare
 a scalar and a Scalar::Properties, then they will be considered the same
 if the two values are the same, regardless of the presence of properties.
 If you compare two Scalar::Properties objects, then they will only be
 considered the same if the values and the properties match.
 
-=head1 BUGS
+=item Compiled regular expressions, eg qr/foo/
 
-C<Data::Compare> cheats with REF, CODE and GLOB references. If such a
-reference is encountered in a structure being processed, the result is
-0 unless references are equal.
+These are stringified before comparison, so the following will match:
 
-Currently, there is no way to compare two compiled piece of code with
-perl so there is no hope to add a better CODE references support in
-C<Data::Compare> in a near future.
+    $r = qr/abc/i;
+    $s = qr/abc/i;
+    Compare($r, $s);
+
+and the following won't, despite them matching *exactly* the same text:
+
+    $r = qr/abc/i;
+    $s = qr/[aA][bB][cC]/i;
+    Compare($r, $s);
+
+Sorry, that's the best we can do.
+
+=item CODE and GLOB references
+
+These are assumed not to match unless the references are identical - ie,
+both are references to the same thing.
+
+=back 4
 
 =head1 AUTHOR
 
@@ -202,7 +220,7 @@ Copyright (c) 1999-2001 Fabien Tassin. All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
-David Cantrell       david@cantrell.org.uk
+Portions copyright 2003 David Cantrell david@cantrell.org.uk
 
 Seeing that Fabien seems to have disappeared, David Cantrell has become
 a co-maintainer so he can apply needed patches.  The licence, of course,
