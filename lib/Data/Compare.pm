@@ -16,7 +16,7 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.03;
+$VERSION = 0.04;
 $DEBUG   = 0;
 
 sub Compare ($$);
@@ -83,7 +83,7 @@ sub Compare ($$) {
   elsif ($x == $y) { # exactly the same reference
     1;
   }
-  elsif ($refx eq 'SCALAR') {
+  elsif ($refx eq 'SCALAR' || $refx eq 'REF') {
     Compare($$x, $$y);
   }
   elsif ($refx eq 'ARRAY') {
@@ -107,9 +107,9 @@ sub Compare ($$) {
     }
     1;
   }
-  elsif ($refx eq 'REF') {
-    0;
-  }
+  # elsif ($refx eq 'REF') {
+  #   0;
+  # }
   elsif ($refx eq 'CODE') {
     0;
   }
@@ -128,7 +128,7 @@ sub Compare ($$) {
       my @y = @$y;
       Compare(\@x, \@y);
     }
-    elsif ($type eq 'SCALAR') {
+    elsif ($type eq 'SCALAR' || $type eq 'REF') {
       my $x = $$x;
       my $y = $$y;
       Compare($x, $y);

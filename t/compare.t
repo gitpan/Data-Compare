@@ -5,7 +5,7 @@ use strict;
 use Data::Compare;
 
 local $^W = 1;
-print "1..33\n";
+print "1..37\n";
 
 my $t = 1;
 
@@ -114,6 +114,12 @@ my $v4 = { 'foo' => $v3 };
 
 # 33
 &comp($v1, $v4, 1);
+
+# 34 .. 37
+&comp(\\1, \\1, 1);
+&comp(\\1, \\2, 0);
+&comp(\\1, 1, 0);
+&comp(\\1, \1, 0);
 
 sub comp {
   my $a = shift;

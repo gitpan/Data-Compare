@@ -1,6 +1,7 @@
 MANIFEST
 README
 CHANGES
+MAINTAINERS-NOTE
 Makefile.PL
 lib/Data/Compare.pm
 t/compare.t

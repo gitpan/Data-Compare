@@ -1,1 +1,2 @@
 0.03  2003-12-23  DCANTRELL  Added special-case handling for Scalar::Properties
+0.04  2003-12-24  DCANTRELL  Applied aef's patch to fix refs to refs to stuff
