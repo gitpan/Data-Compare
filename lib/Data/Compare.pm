@@ -11,14 +11,14 @@ package Data::Compare;
 use strict;
 use warnings;
 
-use vars qw(@ISA @EXPORT $VERSION $DEBUG $recursion_detector %been_there);
+use vars qw(@ISA @EXPORT $VERSION $DEBUG %been_there);
 use Exporter;
 use File::Find::Rule;
 use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.09;
+$VERSION = 0.10;
 $DEBUG   = 0;
 
 my %handler;
@@ -97,20 +97,19 @@ sub Cmp ($;$$) {
 sub Compare ($$;$) {
   croak "Usage: Data::Compare::Compare(x, y, [opts])\n" unless $#_ == 1 || $#_ == 2;
 
-  my @context = caller(1);
-  if(defined($context[3]) && $context[3] ne 'Data::Compare::Compare') {
-    # print "Resetting\n";
-    $recursion_detector = 0;
+  my $x = shift @_;
+  my $y = shift @_;
+  my $opts = (shift @_) || {};
+
+  if(!exists($opts->{recursion_detector})) {
     %been_there = ();
+    $opts->{recursion_detector} = 0;
   }
+  $opts->{recursion_detector}++;
+
   # print "$context[3]\n";
 
-  # print "$recursion_detector\n";
-  die "Yaroo! deep recursion!\n" if(++$recursion_detector == 99);
-
-  my $x = shift;
-  my $y = shift;
-  my $opts = shift || {};
+  die "Yaroo! deep recursion!\n" if($opts->{recursion_detector} == 99);
   
   if(
     (ref($x) && exists($been_there{$x}) && $been_there{$x} > 1) ||

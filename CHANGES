@@ -10,3 +10,6 @@
 			     this bugfix.  Clean-up of code.  Fix minor doc-bug
 			     in lib/Data/Compare/Plugins.pod.
 0.08  2004-01-20  DCANTRELL  Added options, and ignore_hash_keys
+0.09  2004-02-23  DCANTRELL  Added deep recursion detection.
+0.10  2004-03-13  DCANTRELL  Replaced recursion detection with Rusty Conover's
+                             much better implementation.
