@@ -2,10 +2,13 @@
 
 BEGIN { unshift @INC, "lib", "../lib" }
 use strict;
+use warnings;
+# use diagnostics;
+
 use Data::Compare;
 
 local $^W = 1;
-print "1..40\n";
+print "1..44\n";
 
 my $t = 1;
 
@@ -125,6 +128,29 @@ my $v4 = { 'foo' => $v3 };
 &comp(qr/abc/i, qr/abc/i, 1, "Identical regexen");
 &comp(qr/abc/i, qr/[aA][bB][cC]/, 0, "Non-identical regexen");
 &comp(qr/abc/i, '(?i-xsm:abc)', 0, "Regex and scalar which stringify the same");
+
+# 41 - now some real evil, check that we DTRT on infinite recursion
+my $a = [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]];
+my $b = [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]];
+eval { Compare($a, $b); };
+print 'not ' unless($@);
+print 'ok '.($t++)." die on deep recursion\n";
+
+# 42 .. 44
+# scalar cross
+$a = [];
+my($x, $y);
+$x=\$y; 
+$y=\$x; 
+$a->[0]=\$a->[1]; 
+$a->[1]=\$a->[0]; 
+&comp([$x, $y], $a, 0, "two parallel circular structures compare different");
+
+# these two are probably superfluous, as they test referential equality
+# rather than any of the stuff we added to do with circles and recursion
+&comp([$x, $y], [$y, $x], 0, "looking at a circle from two different starting points compares different");
+&comp([$x, $y], [$x, $y], 1, "a circular structure compares to itself");
+
 
 sub comp {
   my $a = shift;

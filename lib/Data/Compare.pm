@@ -9,14 +9,16 @@
 package Data::Compare;
 
 use strict;
-use vars qw(@ISA @EXPORT $VERSION $DEBUG);
+use warnings;
+
+use vars qw(@ISA @EXPORT $VERSION $DEBUG $recursion_detector %been_there);
 use Exporter;
 use File::Find::Rule;
 use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.08;
+$VERSION = 0.09;
 $DEBUG   = 0;
 
 my %handler;
@@ -94,9 +96,30 @@ sub Cmp ($;$$) {
 
 sub Compare ($$;$) {
   croak "Usage: Data::Compare::Compare(x, y, [opts])\n" unless $#_ == 1 || $#_ == 2;
+
+  my @context = caller(1);
+  if(defined($context[3]) && $context[3] ne 'Data::Compare::Compare') {
+    # print "Resetting\n";
+    $recursion_detector = 0;
+    %been_there = ();
+  }
+  # print "$context[3]\n";
+
+  # print "$recursion_detector\n";
+  die "Yaroo! deep recursion!\n" if(++$recursion_detector == 99);
+
   my $x = shift;
   my $y = shift;
   my $opts = shift || {};
+  
+  if(
+    (ref($x) && exists($been_there{$x}) && $been_there{$x} > 1) ||
+    (ref($y) && exists($been_there{$y}) && $been_there{$y} > 1)
+  ) {
+    return 0; # is this the right thing to do?
+  }
+  $been_there{$x}++ if(ref($x));
+  $been_there{$y}++ if(ref($y));
 
   $opts->{ignore_hash_keys} = { map {
     ($_, 1)
@@ -287,6 +310,25 @@ an arrayref of strings. When comparing two hashes, any keys mentioned in
 this list will be ignored.
 
 =back
+
+=head1 CIRCULAR STRUCTURES
+
+Comparing a circular structure to itself returns true:
+
+    $x = \$y;
+    $y = \$x;
+    Compare([$x, $y], [$x, $y]);
+
+But comparing two different circular structures returns false:
+
+    $x = \$y;
+    $y = \$x;
+    Compare([$x, $y], [$y, $x]); # <-- note different order
+
+And on a sort-of-related note, if you try to compare insanely deeply nested
+structures, the module will die.  For this to affect you, you need to go
+around a hundred levels deep though, and if you do that you have bigger
+problems which I can't help you with ;-)
 
 =head1 PLUGINS
 
