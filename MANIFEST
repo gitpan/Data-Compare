@@ -3,7 +3,11 @@ README
 CHANGES
 MAINTAINERS-NOTE
 Makefile.PL
+TODO
 lib/Data/Compare.pm
+lib/Data/Compare/Plugins.pod
+lib/Data/Compare/Plugins/Scalar-Properties.pm
 t/compare.t
 t/oo.t
+t/plugins.t
 t/scalar-properties.t

@@ -1,7 +1,5 @@
 #!/usr/bin/perl -w
 
-# tests for the patched version of Data::Compare
-
 my $loaded;
 
 use strict;

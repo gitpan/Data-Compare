@@ -11,12 +11,56 @@ package Data::Compare;
 use strict;
 use vars qw(@ISA @EXPORT $VERSION $DEBUG);
 use Exporter;
+use File::Find::Rule;
 use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.05;
+$VERSION = 0.06;
 $DEBUG   = 0;
+
+my %handler;
+
+register_plugins();
+
+# finds and registers plugins
+sub register_plugins {
+    foreach my $file (
+        File::Find::Rule
+            ->file()
+            ->name('*.pm')
+            ->in(
+	        map { "$_/Data/Compare/Plugins" }
+	        grep { -d "$_/Data/Compare/Plugins" }
+	        @INC
+	    )
+    ) {
+        my $requires = require($file);
+	# not an arrayref? bail
+        if(ref($requires) ne 'ARRAY') {
+            warn("$file isn't a valid Data::Compare plugin (didn't return arrayref)\n");
+	    return;
+        }
+	# coerce into arrayref of arrayrefs if necessary
+	if(ref((@{$requires})[0]) ne 'ARRAY') { $requires = [$requires] }
+
+        # register all the handlers
+        foreach my $require (@{$requires}) {
+            my($handler, $type1, $type2, $cruft) = reverse @{$require};
+	    $type2 = $type1 unless(defined($type2));
+	    ($type1, $type2) = sort($type1, $type2);
+	    if(!defined($type1) || ref($type1) ne '' || !defined($type2) || ref($type2) ne '') {
+	        warn("$file isn't a valid Data::Compare plugin (invalid type)\n");
+	    } elsif(defined($cruft)) {
+	        warn("$file isn't a valid Data::Compare plugin (extra data)\n");
+	    } elsif(ref($handler) ne 'CODE') {
+	        warn("$file isn't a valid Data::Compare plugin (no coderef)\n");
+	    } else {
+                $handler{$type1}{$type2} = $handler;
+	    }
+        }
+    }
+}
 
 sub Compare ($$);
 
@@ -40,26 +84,6 @@ sub Cmp ($;$$) {
   Compare($x, $y);
 }
 
-# Compare a S::P and a scalar
-sub sp_scalar_compare {
-    my($scalar, $sp) = @_;
-    ($scalar, $sp) = ($sp, $scalar) if(ref($scalar));
-    return sp_sp_compare($scalar, $sp) if(ref($scalar));
-    return 1 if($scalar eq $sp);
-    0;
-}
-
-# Compare two S::Ps
-sub sp_sp_compare {
-    my($sp1, $sp2) = @_;
-    return 0 unless($sp1 eq $sp2);
-    return 0 unless(Compare([sort $sp1->get_props()], [sort $sp2->get_props()]));
-    return 0 if(
-        grep { !Compare(eval "\$sp1->$_()", eval "\$sp2->$_()") } $sp1->get_props()
-    );
-    1;
-}
-
 sub Compare ($$) {
   croak "Usage: Data::Compare::Compare(x, y)\n" unless $#_ == 1;
   my $x = shift;
@@ -68,11 +92,18 @@ sub Compare ($$) {
   my $refx = ref $x;
   my $refy = ref $y;
 
-  if($refx eq 'Scalar::Properties' || $refy eq 'Scalar::Properties') {
-    # at least one S::P
-    return sp_scalar_compare($x, $y);
+  # foreach my $type (keys %handler) {
+  #     if($refx eq $type || $refy eq $type) {
+  #         return &{$handler{$type}}($x, $y);
+  #     }
+  # }
+  if(exists($handler{$refx}) && exists($handler{$refx}{$refy})) {
+      return &{$handler{$refx}{$refy}}($x, $y);
+  } elsif(exists($handler{$refy}) && exists($handler{$refy}{$refx})) {
+      return &{$handler{$refy}{$refx}}($x, $y);
   }
-  elsif(!$refx && !$refy) { # both are scalars
+
+  if(!$refx && !$refy) { # both are scalars
     return $x eq $y if defined $x && defined $y; # both are defined
     !(defined $x || defined $y);
   }
@@ -144,6 +175,20 @@ sub Compare ($$) {
   }
 }
 
+sub plugins {
+    return { map { (($_ eq '') ? '[scalar]' : $_, [map { $_ eq '' ? '[scalar]' : $_ } keys %{$handler{$_}}]) } keys %handler };
+}
+
+sub plugins_printable {
+    my $r = "The following comparisons are available through plugins\n\n";
+    foreach my $key (sort keys %handler) {
+        foreach(sort keys %{$handler{$key}}) {
+            $r .= join(":\t", map { $_ eq '' ? '[scalar]' : $_ } ($key, $_))."\n";
+	}
+    }
+    $r;
+}
+
 1;
 
 =head1 NAME
@@ -183,11 +228,9 @@ A few data types are treated as special cases:
 
 =item Scalar::Properties objects
 
-If you compare
-a scalar and a Scalar::Properties, then they will be considered the same
-if the two values are the same, regardless of the presence of properties.
-If you compare two Scalar::Properties objects, then they will only be
-considered the same if the values and the properties match.
+This has been moved into a plugin, although functionality remains the
+same as with the previous version.  Full documentation is in
+L<Data::Compare::Plugins::Scalar-Properties>.
 
 =item Compiled regular expressions, eg qr/foo/
 
@@ -200,7 +243,7 @@ These are stringified before comparison, so the following will match:
 and the following won't, despite them matching *exactly* the same text:
 
     $r = qr/abc/i;
-    $s = qr/[aA][bB][cC]/i;
+    $s = qr/[aA][bB][cC]/;
     Compare($r, $s);
 
 Sorry, that's the best we can do.
@@ -212,6 +255,36 @@ both are references to the same thing.
 
 =back 4
 
+=head1 PLUGINS
+
+The module takes plug-ins so you can provide specialised routines for
+comparing your own objects and data-types.  For details see
+L<Data::Compare::Plugins>.
+
+A couple of functions are provided to examine what goodies have been
+made available through plugins:
+
+=over 4
+
+=item plugins
+
+Returns a structure (a hash ref) describing all the comparisons made
+available through plugins.
+This function is *not* exported, so should be called as Data::Compare::plugins().
+It takes no parameters.
+
+=item plugins_printable
+
+Returns formatted text
+
+=back
+
+=head1 BUGS
+
+Plugin support is not quite finished (see the TODO file for details) but
+is usable.  The missing bits are bells and whistles rather than core
+functionality.
+
 =head1 AUTHOR
 
 Fabien Tassin        fta@sofaraway.org
@@ -220,12 +293,13 @@ Copyright (c) 1999-2001 Fabien Tassin. All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
-Portions copyright 2003 David Cantrell david@cantrell.org.uk
-
 Seeing that Fabien seems to have disappeared, David Cantrell has become
 a co-maintainer so he can apply needed patches.  The licence, of course,
 remains the same, and all communications about this module should be
 CCed to Fabien in case he ever returns and wants his baby back.
+
+Portions, including plugins, copyright 2003-2004 David Cantrell
+david@cantrell.org.uk
 
 =head1 SEE ALSO
 

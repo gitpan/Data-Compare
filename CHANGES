@@ -3,3 +3,5 @@
                              refs to stuff
 0.05  2003-12-30  DCANTRELL  Applied mike@very.puzzling.org's patch for
                              comparing compiled regexps
+0.06  2004-01-06  DCANTRELL  Added plugins, moved Scalar::Properties support
+                             into a plugin (plugins were Jim Cromie's idea)
