@@ -19,3 +19,4 @@
                              counter properly!  (thanks to Jenda for the bug
                              report)
 0.13  2004-11-09  DCANTRELL  Oops, left in some debugging output
+0.14  2006-11-01  DCANTRELL  Fixed deeply nested objects (see rt.cpan #6966)

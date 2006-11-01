@@ -4,7 +4,7 @@
 # Author: Fabien Tassin <fta@sofaraway.org>
 # updated by David Cantrell <david@cantrell.org.uk>
 # Copyright 1999-2001 Fabien Tassin <fta@sofaraway.org>
-# portions Copyright 2003, 2004 David Cantrell
+# portions Copyright 2003 - 2006 David Cantrell
 
 package Data::Compare;
 
@@ -17,7 +17,7 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.13;
+$VERSION = 0.14;
 $DEBUG   = 0;
 
 my %handler;
@@ -187,16 +187,22 @@ sub Compare ($$;$) {
                 my %x = %$x;
                 my %y = %$y;
                 $rval = Compare(\%x, \%y, $opts);
+                $been_there{\%x}--; # decrement count for temp structures
+                $been_there{\%y}--;
             }
             elsif ($type eq 'ARRAY') {
                 my @x = @$x;
                 my @y = @$y;
                 $rval = Compare(\@x, \@y, $opts);
+                $been_there{\@x}--;
+                $been_there{\@y}--;
             }
             elsif ($type eq 'SCALAR' || $type eq 'REF') {
                 my $x = $$x;
                 my $y = $$y;
                 $rval = Compare($x, $y, $opts);
+                # $been_there{\$x}--;
+                # $been_there{\$y}--;
             }
             elsif ($type eq 'GLOB') {
                 $rval = 0;
@@ -379,7 +385,7 @@ a co-maintainer so he can apply needed patches.  The licence, of course,
 remains the same, and all communications about this module should be
 CCed to Fabien in case he ever returns and wants his baby back.
 
-Portions, including plugins, copyright 2003-2004 David Cantrell
+Portions, including plugins, copyright 2003-2006 David Cantrell
 david@cantrell.org.uk
 
 =head1 SEE ALSO
