@@ -17,7 +17,7 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.14;
+$VERSION = 0.15;
 $DEBUG   = 0;
 
 my %handler;

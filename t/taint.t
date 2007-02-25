@@ -1,14 +1,8 @@
-#!perl -Tw
+#!perl -w
 
-use strict;
-
-use Data::Compare;
-
-print "1..1\n";
-
-my $test = 0;
-
-# in taint mode there should be no plugins
-
-print "not " unless(Compare({}, Data::Compare::plugins()));
-print 'ok '.(++$test)." plugins disabled in taint mode\n";
+if($^O !~ /vms/i && $] >= 5.008) {
+    # we don't just use -t in shebang above cos that's not 5.6-friendly
+    exec("$^X -Tw -Iblib/lib t/realtainttest");
+} else {
+    print "1..0 # skip - can't reliably taint-test on VMS or versions < 5.8\n";
+}
