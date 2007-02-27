@@ -4,7 +4,7 @@
 # Author: Fabien Tassin <fta@sofaraway.org>
 # updated by David Cantrell <david@cantrell.org.uk>
 # Copyright 1999-2001 Fabien Tassin <fta@sofaraway.org>
-# portions Copyright 2003 - 2006 David Cantrell
+# portions Copyright 2003 - 2007 David Cantrell
 
 package Data::Compare;
 
@@ -17,12 +17,13 @@ use Carp;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 0.15;
+$VERSION = 0.16;
 $DEBUG   = 0;
 
 my %handler;
 
-if(!${^TAINT}) {
+use Cwd;
+if(eval { chdir(getcwd()) }) { # chdir(getcwd()) is Bad in taint mode
     use File::Find::Rule;
     register_plugins();
 }
@@ -372,6 +373,11 @@ Plugin support is not quite finished (see the TODO file for details) but
 is usable.  The missing bits are bells and whistles rather than core
 functionality.
 
+Plugins are unavailable if you can't change to the current directory.  This
+might happen if you started your process as a priveleged user and then
+dropped priveleges.  This is due to how we check for Taintedness.  If this
+affects you, please supply a portable patch.
+
 =head1 AUTHOR
 
 Fabien Tassin        fta@sofaraway.org
@@ -385,7 +391,7 @@ a co-maintainer so he can apply needed patches.  The licence, of course,
 remains the same, and all communications about this module should be
 CCed to Fabien in case he ever returns and wants his baby back.
 
-Portions, including plugins, copyright 2003-2006 David Cantrell
+Portions, including plugins, copyright 2003-2007 David Cantrell
 david@cantrell.org.uk
 
 =head1 SEE ALSO
