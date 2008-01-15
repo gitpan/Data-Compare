@@ -18,4 +18,6 @@ t/deep-objects.t
 t/realtainttest
 t/pod.t
 NOTES
+t/noimport.t
+t/noimport-register_plugins.t
 META.yml                                 Module meta-data (added by MakeMaker)
