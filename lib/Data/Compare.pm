@@ -17,7 +17,7 @@ use Scalar::Util;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = '1.20';
+$VERSION = 1.200_500;
 $DEBUG   = 0;
 
 my %handler;
