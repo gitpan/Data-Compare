@@ -3,8 +3,7 @@
 use ExtUtils::MakeMaker qw(WriteMakefile);
 
 WriteMakefile(NAME         => "Data::Compare",
-              VERSION      => '1.200_500',
-#               VERSION_FROM => "lib/Data/Compare.pm",
+              VERSION_FROM => "lib/Data/Compare.pm",
 	      PREREQ_PM    => {
 	          File::Find::Rule => 0.10,
 		  Scalar::Util     => 0
