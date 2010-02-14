@@ -8,7 +8,7 @@ use warnings;
 use Data::Compare;
 
 local $^W = 1;
-print "1..43\n";
+print "1..45\n";
 
 my $t = 1;
 
@@ -137,14 +137,22 @@ $x=\$y;
 $y=\$x; 
 $a->[0]=\$a->[1]; 
 $a->[1]=\$a->[0]; 
-&comp([$x, $y], $a, 0, "two parallel circular structures compare different");
+&comp([$x, $y], $a, 1, "two parallel circular structures compare the same");
 
 # these two are probably superfluous, as they test referential equality
 # rather than any of the stuff we added to do with circles and recursion
-&comp([$x, $y], [$y, $x], 0, "looking at a circle from two different starting points compares different");
+&comp([$x, $y], [$y, $x], 1, "looking at a circle from two different starting points compares the same");
 &comp([$x, $y], [$x, $y], 1, "a circular structure compares to itself");
 
+$a = [];
+$b = [];
+$a->[0] = { foo => { bar => $a } };
+$b->[0] = { foo => { bar => $b } };
+$a->[1] = $b->[1] = 5;
+comp($a, $b, 1, "structure of a circle plus same data compares the same");
 
+$a->[1] = 6;
+comp($a, $b, 0, "structure of a circle plus different data compares different");
 sub comp {
   my $a = shift;
   my $b = shift;
