@@ -2,7 +2,7 @@
 # Author: Fabien Tassin <fta@sofaraway.org>
 # updated by David Cantrell <david@cantrell.org.uk>
 # Copyright 1999-2001 Fabien Tassin <fta@sofaraway.org>
-# portions Copyright 2003 - 2010 David Cantrell
+# portions Copyright 2003 - 2013 David Cantrell
 
 package Data::Compare;
 
@@ -12,11 +12,12 @@ use warnings;
 use vars qw(@ISA @EXPORT $VERSION $DEBUG %been_there);
 use Exporter;
 use Carp;
-use Scalar::Util;
+use Scalar::Util qw(tainted);
+use File::Find::Rule;
 
 @ISA     = qw(Exporter);
 @EXPORT  = qw(Compare);
-$VERSION = 1.22;
+$VERSION = 1.23;
 $DEBUG   = $ENV{PERL_DATA_COMPARE_DEBUG} || 0;
 
 my %handler;
@@ -24,15 +25,12 @@ my %handler;
 use Cwd;
 
 sub import {
-  if(eval { chdir(getcwd()) }) { # chdir(getcwd()) isn't taint-safe
-    register_plugins();
-  }
+  register_plugins() unless tainted getcwd();
   __PACKAGE__->export_to_level(1, @EXPORT);
 }
 
 # finds and registers plugins
 sub register_plugins {
-  eval 'use File::Find::Rule';
   foreach my $file (
     File::Find::Rule->file()->name('*.pm')->in(
       map { "$_/Data/Compare/Plugins" }
@@ -119,6 +117,7 @@ sub Compare {
     (ref($x) && exists($been_there{"$x-$xpos-$xparent"}) && $been_there{"$x-$xpos-$xparent"} > 1) ||
     (ref($y) && exists($been_there{"$y-$ypos-$yparent"}) && $been_there{"$y-$ypos-$yparent"} > 1)
   ) {
+    $opts->{recursion_detector}--;
     return 1; # we bail as soon as possible, so if we've *not* bailed and have got here, say we're OK and go to the next sub-structure
   } else {
     $been_there{"$x-$xpos-$xparent"}++ if(ref($x));
@@ -379,20 +378,15 @@ the empty list, and then call the register_plugins class method:
 
 or you could call it as a function if that floats your boat.
 
-=head1 CODE REPOSITORY
+=head1 SOURCE CODE REPOSITORY
 
-L<http://www.cantrell.org.uk/cgit/cgit.cgi/perlmodules/>
+L<git://github.com/DrHyde/perl-modules-Data-Compare.git>
 
 =head1 BUGS
 
 Plugin support is not quite finished (see the TODO file for details) but
 is usable.  The missing bits are bells and whistles rather than core
 functionality.
-
-Plugins are unavailable if you can't change to the current directory.  This
-might happen if you started your process as a priveleged user and then
-dropped priveleges.  This is due to how we check for Taintedness.  If this
-affects you, please supply a portable patch.
 
 Please report any other bugs either by email to David Cantrell (see below
 for address) or using rt.cpan.org:
@@ -411,7 +405,7 @@ Copyright (c) 1999-2001 Fabien Tassin. All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
-Some parts copyright 2003 - 2010 David Cantrell.
+Some parts copyright 2003 - 2013 David Cantrell.
 
 Seeing that Fabien seems to have disappeared, David Cantrell has become
 a co-maintainer so he can apply needed patches.  The licence, of course,

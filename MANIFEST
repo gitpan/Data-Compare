@@ -1,6 +1,6 @@
 MANIFEST
 README
-CHANGES
+CHANGELOG
 MAINTAINERS-NOTE
 Makefile.PL
 TODO
@@ -27,4 +27,6 @@ t/saritha-nalagandla-bug/test082_updateevent_multipleinvitees.out
 ARTISTIC.txt
 GPL2.txt
 t/coverage.sh
-META.yml                                 Module meta-data (added by MakeMaker)
+t/FIXME-large-structures.t
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)
