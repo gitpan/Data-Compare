@@ -28,5 +28,8 @@ ARTISTIC.txt
 GPL2.txt
 t/coverage.sh
 t/FIXME-large-structures.t
+MANIFEST.SKIP
+t/overload.t
+t/lib/SpecialClass.pm
 META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)
